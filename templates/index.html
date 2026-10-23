@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BugPredict - Early Bug Risk Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>BugPredict</h1>
+    <p>Early bug-risk detection for Git repositories</p>
+  </header>
+
+  <main>
+    <form method="get" class="panel">
+      <label>Repository path
+        <input type="text" name="repo" value="{{ repo }}">
+      </label>
+      {% if commits %}
+      <label>Base commit (older)
+        <select name="base">
+          {% for c in commits %}
+          <option value="{{ c.hash }}" {{ 'selected' if c.hash == base }}>{{ c.short }} - {{ c.message }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Head commit (newer)
+        <select name="head">
+          {% for c in commits %}
+          <option value="{{ c.hash }}" {{ 'selected' if c.hash == head }}>{{ c.short }} - {{ c.message }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <button type="submit">Analyze</button>
+    </form>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% else %}
+      <section class="summary">
+        <div class="card high"><span>{{ counts.High }}</span>High risk</div>
+        <div class="card medium"><span>{{ counts.Medium }}</span>Medium risk</div>
+        <div class="card low"><span>{{ counts.Low }}</span>Low risk</div>
+      </section>
+
+      <section class="panel">
+        <h2>Changed files, riskiest first</h2>
+        <table>
+          <thead>
+            <tr><th>File</th><th>Risk</th><th>Score</th><th>+ / -</th><th>Complexity</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+          {% for r in results %}
+            <tr>
+              <td class="mono">{{ r.path }}</td>
+              <td><span class="badge {{ r.level|lower }}">{{ r.level }}</span></td>
+              <td>
+                <div class="bar">
+  <div
+    class="fill {{ r.level|lower }}"
+    style="--risk-score: {{ r.score|default(0)|int }}%; width: var(--risk-score);">
+  </div>
+</div>
+                {{ r.score }}/100
+              </td>
+              <td>+{{ r.added }} / -{{ r.deleted }}</td>
+              <td>{{ r.complexity }}</td>
+              <td><ul>{% for reason in r.reasons %}<li>{{ reason }}</li>{% endfor %}</ul></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <p class="note">Scores estimate risk and suggest where to test more. They do not prove a bug exists.</p>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>
