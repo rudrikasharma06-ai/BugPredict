@@ -1,80 +1,1123 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html class="dark" lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BugPredict - Early Bug Risk Detection</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta content="web_dashboard" name="shell-type"/>
+  <title>BugPredict - Predictive Telemetry & Code Intelligence</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#080f1f",
+            "surface-dim": "#080f1f",
+            "surface-bright": "#22334f",
+            "surface-container-lowest": "#050b17",
+            "surface-container-low": "#0b1528",
+            "surface-container": "#111c30",
+            "surface-container-high": "#18263e",
+            "surface-container-highest": "#1f2d45",
+            "surface-variant": "#1e293b",
+            "primary": "#3b82f6",
+            "primary-dim": "#adc6ff",
+            "primary-container": "#3b82f6",
+            "on-primary": "#ffffff",
+            "secondary": "#cbd5e1",
+            "secondary-container": "#334155",
+            "tertiary": "#10b981",
+            "tertiary-container": "#059669",
+            "error": "#ef4444",
+            "error-container": "#7f1d1d",
+            "outline": "#64748b",
+            "outline-variant": "#1e293b"
+          },
+          fontFamily: {
+            "body-md": ["Inter", "sans-serif"],
+            "headline-md": ["Inter", "sans-serif"],
+            "headline-lg": ["Inter", "sans-serif"],
+            "label-code-sm": ["JetBrains Mono", "monospace"],
+            "label-code-md": ["JetBrains Mono", "monospace"],
+            "metric-display": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body>
-  <header>
-    <h1>BugPredict</h1>
-    <p>Early bug-risk detection for Git repositories</p>
-  </header>
+<body class="bg-[#080f1f] font-body-md text-slate-100 antialiased selection:bg-blue-600/30 selection:text-blue-300">
 
-  <main>
-    <form method="get" class="panel">
-      <label>Repository path
-        <input type="text" name="repo" value="{{ repo }}">
-      </label>
-      {% if commits %}
-      <label>Base commit (older)
-        <select name="base">
-          {% for c in commits %}
-          <option value="{{ c.hash }}" {{ 'selected' if c.hash == base }}>{{ c.short }} - {{ c.message }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>Head commit (newer)
-        <select name="head">
-          {% for c in commits %}
-          <option value="{{ c.hash }}" {{ 'selected' if c.hash == head }}>{{ c.short }} - {{ c.message }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      {% endif %}
-      <button type="submit">Analyze</button>
-    </form>
+  <!-- Left Sidebar Navigation -->
+  <aside class="fixed left-0 top-0 h-full w-64 bg-[#050b17] border-r border-slate-800/80 z-50 flex flex-col justify-between select-none shadow-2xl">
+    <div class="flex flex-col">
+      <!-- Brand Logo & Header -->
+      <div class="h-16 px-5 flex items-center gap-3 border-b border-slate-800/80 bg-[#050b17]/90">
+        <div class="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold shadow-inner">
+          <span class="material-symbols-outlined text-[22px]">shield_with_heart</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-headline-md text-[17px] tracking-tight text-white font-bold leading-none">BugPredict</span>
+          <span class="font-label-code-sm text-[11px] text-blue-400 mt-1 font-medium">Risk Intelligence v2.4</span>
+        </div>
+      </div>
 
-    {% if error %}
-      <div class="error">{{ error }}</div>
-    {% else %}
-      <section class="summary">
-        <div class="card high"><span>{{ counts.High }}</span>High risk</div>
-        <div class="card medium"><span>{{ counts.Medium }}</span>Medium risk</div>
-        <div class="card low"><span>{{ counts.Low }}</span>Low risk</div>
-      </section>
+      <!-- Modules Nav -->
+      <div class="px-4 pt-5 pb-2">
+        <span class="font-label-code-sm text-[11px] text-slate-400 font-bold uppercase tracking-wider px-2">Core Modules</span>
+      </div>
+      <nav class="flex flex-col gap-1.5 px-3">
+        <a aria-current="page" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all bg-[#111c30] text-blue-400 border-l-2 border-blue-500 font-semibold shadow-sm" href="#dashboard">
+          <span class="material-symbols-outlined text-[20px]">grid_view</span>
+          <span class="text-[14px]">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="#comparison-hero">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">difference</span>
+          <span class="text-[14px]">Commit Diff</span>
+        </a>
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="#risk-analytics">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">vital_signs</span>
+          <span class="text-[14px]">Risk Analytics</span>
+        </a>
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="#files-table">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">code</span>
+          <span class="text-[14px]">Changed Files</span>
+        </a>
+        {% if results %}
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="#deep-dive-panel">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">troubleshoot</span>
+          <span class="text-[14px]">File Deep Dive</span>
+        </a>
+        {% endif %}
+        
+        <div class="my-2 border-t border-slate-800/80 mx-2"></div>
+        <span class="font-label-code-sm text-[11px] text-slate-400 font-bold uppercase tracking-wider px-3 py-1">Operations</span>
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="{{ url_for('api_analyze', repo=repo, base=base, head=head) }}" target="_blank">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">api</span>
+          <span class="text-[14px]">JSON API</span>
+        </a>
+        <a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-300 hover:bg-[#111c30]/70 hover:text-white transition-all font-medium" href="#notice-section">
+          <span class="material-symbols-outlined text-[20px] text-slate-400">menu_book</span>
+          <span class="text-[14px]">Heuristic Guide</span>
+        </a>
+      </nav>
+    </div>
 
-      <section class="panel">
-        <h2>Changed files, riskiest first</h2>
-        <table>
-          <thead>
-            <tr><th>File</th><th>Risk</th><th>Score</th><th>+ / -</th><th>Complexity</th><th>Why</th></tr>
-          </thead>
-          <tbody>
-          {% for r in results %}
-            <tr>
-              <td class="mono">{{ r.path }}</td>
-              <td><span class="badge {{ r.level|lower }}">{{ r.level }}</span></td>
-              <td>
-                <div class="bar">
-  <div
-    class="fill {{ r.level|lower }}"
-    style="--risk-score: {{ r.score|default(0)|int }}%; width: var(--risk-score);">
+    <!-- Sidebar Bottom Status -->
+    <div class="p-4 border-t border-slate-800/80 bg-[#080f1f]/80 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#050b17] border border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+          </span>
+          <span class="font-label-code-sm text-[12px] text-slate-300 font-medium truncate max-w-[125px]" title="{{ repo }}">
+            {{ repo.split('/')[-1].replace('.git', '') if repo else 'Repository' }}
+          </span>
+        </div>
+        <span class="font-label-code-sm text-[11px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Sync</span>
+      </div>
+      <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#050b17]/80 border border-slate-800/80 text-slate-300">
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px] text-blue-400">commit</span>
+          <span class="font-label-code-sm text-[12px] font-semibold text-blue-400">Head</span>
+        </div>
+        <span class="font-label-code-sm text-[12px] text-slate-400 font-mono">
+          @{{ head[:7] if head else 'HEAD' }}
+        </span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="pl-64 flex flex-col min-h-screen">
+    
+    <!-- Top Header -->
+    <header class="fixed top-0 left-64 right-0 h-16 bg-[#050b17]/95 backdrop-blur-md border-b border-slate-800/80 z-40 px-6 flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 text-slate-300 font-label-code-sm text-[13px]">
+          <span class="text-slate-400">BugPredict</span>
+          <span class="text-slate-600">/</span>
+          <span class="text-blue-400 font-bold truncate max-w-[220px]" title="{{ repo }}">
+            {{ repo.split('/')[-1].replace('.git', '') if repo else 'Analysis' }}
+          </span>
+          {% if base and head %}
+          <span class="text-slate-600">/</span>
+          <span class="text-slate-200 font-mono">{{ base[:7] }}..{{ head[:7] }}</span>
+          {% endif %}
+        </div>
+        {% if not error and results %}
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+          </span>
+          <span class="font-label-code-sm text-[12px] font-semibold text-emerald-400">Analysis Complete</span>
+        </div>
+        {% elif error %}
+        <div class="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30">
+          <span class="h-2 w-2 rounded-full bg-rose-400"></span>
+          <span class="font-label-code-sm text-[12px] font-semibold text-rose-400">Analysis Error</span>
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button onclick="document.getElementById('analysis-form').submit()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-body-md text-[13px] px-4 py-2 rounded-lg font-semibold transition-all shadow-md active:scale-95 focus:ring-2 focus:ring-blue-400/50" type="button">
+          <span class="material-symbols-outlined text-[18px]">refresh</span>
+          <span>Re-run Diff Analysis</span>
+        </button>
+        <div class="h-6 w-px bg-slate-800 mx-1"></div>
+        <div class="flex items-center gap-3 pl-1">
+          <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-blue-400 font-bold text-sm">
+            BP
+          </div>
+          <div class="hidden md:flex flex-col text-left">
+            <span class="text-[13px] font-bold text-white leading-tight">Analyst Console</span>
+            <span class="font-label-code-sm text-[11px] text-slate-400 leading-tight mt-0.5">Automated Triage</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="dashboard" class="w-full pt-20 bg-[#080f1f] flex-1 px-6 lg:px-8 py-8">
+      <div class="flex flex-col w-full gap-8 max-w-[1680px] mx-auto">
+
+        <!-- System Status Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-3 bg-[#0b1528] border border-slate-800/90 rounded-2xl shadow-md">
+          <div class="flex items-center gap-3">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full {% if error %}bg-rose-400{% else %}bg-emerald-400{% endif %} opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 {% if error %}bg-rose-400{% else %}bg-emerald-400{% endif %}"></span>
+            </span>
+            <span class="text-[14px] font-bold text-white">System Status:</span>
+            {% if error %}
+            <span class="text-[13px] text-rose-300 font-bold bg-rose-500/15 border border-rose-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>Analysis Error Encountered
+            </span>
+            {% else %}
+            <span class="text-[13px] text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>Analysis Engine Active &amp; Ready
+            </span>
+            {% endif %}
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-label-code-sm text-[12px] text-slate-400">Analyzed Files:</span>
+            <span class="font-label-code-sm text-[13px] text-white font-bold bg-[#050b17] px-3 py-1 rounded-lg border border-slate-800">
+              {{ results|length if results else 0 }} Changed Files
+            </span>
+          </div>
+        </div>
+
+        <!-- Error State Display (if any) -->
+        {% if error %}
+        <section class="bg-[#1a0f14] border border-rose-500/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+          <div class="absolute top-0 left-0 bottom-0 w-2 bg-rose-500"></div>
+          <div class="flex items-start gap-4 pl-2">
+            <div class="p-3 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
+              <span class="material-symbols-outlined text-[30px]">error</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-[18px] text-white font-bold">Repository Analysis Error</h3>
+              <p class="text-[14px] text-rose-300 mt-1.5 font-label-code-sm leading-relaxed">{{ error }}</p>
+              <div class="mt-4 pt-4 border-t border-rose-900/40 text-[13px] text-slate-300">
+                <span class="font-semibold text-white">Troubleshooting suggestions:</span>
+                <ul class="list-disc pl-5 mt-1 space-y-1 text-slate-400">
+                  <li>Ensure the repository path or URL is valid and accessible.</li>
+                  <li>For remote GitHub repositories, ensure the repository is public and uses an HTTPS URL.</li>
+                  <li>Confirm that the repository has at least two commits to calculate a change diff.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- Top Hero / Commit Comparison Section -->
+        <section id="comparison-hero" class="bg-[#0b1528] border border-slate-800/90 rounded-2xl p-7 shadow-xl">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-slate-800/80">
+            <div class="flex items-start sm:items-center gap-4">
+              <div class="h-14 w-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
+                <span class="material-symbols-outlined text-[32px]">difference</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <h1 class="text-[24px] sm:text-[28px] text-white font-extrabold tracking-tight">Repository Comparison &amp; Commit Diff</h1>
+                  <span class="px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 font-label-code-sm text-[12px] font-bold">Heuristic v2.4</span>
+                </div>
+                <p class="text-[14px] sm:text-[15px] text-slate-300 mt-1.5 leading-relaxed">Select base and target head commit to predict early regression patterns, complexity spikes, and defect vulnerabilities.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <span class="px-3 py-1.5 rounded-xl bg-[#111c30] border border-slate-700/60 text-slate-300 flex items-center gap-2 text-[12px] font-medium shadow-sm">
+                <span class="material-symbols-outlined text-[16px] text-blue-400">analytics</span>
+                AST Cyclomatic Delta
+              </span>
+              <span class="px-3 py-1.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center gap-2 text-[12px] font-bold shadow-sm">
+                <span class="material-symbols-outlined text-[16px]">commit</span>
+                2-Dot Diff
+              </span>
+            </div>
+          </div>
+
+          <!-- Input Row: Repos & Commits Form -->
+          <form method="get" id="analysis-form" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-6 items-end">
+            <!-- Repo URL -->
+            <div class="lg:col-span-4 flex flex-col gap-2">
+              <label for="repo-input" class="font-label-code-sm text-[12px] text-slate-300 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>Repository Path / URL</span>
+                <span class="text-emerald-400 flex items-center gap-1.5 font-semibold normal-case">
+                  <span class="h-2 w-2 rounded-full bg-emerald-400"></span>Target
+                </span>
+              </label>
+              <div class="flex items-center bg-[#050b17] border border-slate-700/80 rounded-xl px-4 py-2.5 shadow-inner hover:border-slate-500 transition-colors">
+                <span class="material-symbols-outlined text-slate-400 text-[20px] mr-2.5 shrink-0">hub</span>
+                <input class="bg-transparent font-label-code-sm text-[13px] text-white flex-1 outline-none truncate font-medium placeholder:text-slate-500" id="repo-input" name="repo" type="text" value="{{ repo }}" placeholder="https://github.com/owner/repo.git or local path"/>
+                <button onclick="navigator.clipboard.writeText(document.getElementById('repo-input').value)" class="text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-800 ml-1.5" title="Copy Repository URL" type="button">
+                  <span class="material-symbols-outlined text-[17px]">content_copy</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Base Commit Dropdown -->
+            <div class="lg:col-span-3 flex flex-col gap-2">
+              <label for="base-select" class="font-label-code-sm text-[12px] text-slate-300 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>Base Commit (Older)</span>
+                <span class="text-slate-400 font-medium normal-case font-mono">Prior Stable</span>
+              </label>
+              <div class="relative bg-[#050b17] border border-slate-700/80 rounded-xl shadow-sm hover:border-slate-500 transition-colors">
+                <select id="base-select" name="base" class="w-full bg-transparent font-label-code-sm text-[13px] text-white px-3.5 py-3 rounded-xl outline-none appearance-none cursor-pointer pr-10 truncate font-medium">
+                  {% if commits %}
+                    {% for c in commits %}
+                    <option value="{{ c.hash }}" {{ 'selected' if c.hash == base }} class="bg-[#050b17] text-slate-100">
+                      {{ c.short }} - {{ c.message[:40] }} ({{ c.author }})
+                    </option>
+                    {% endfor %}
+                  {% else %}
+                    <option value="{{ base }}">{{ base[:10] if base else 'Auto-detect' }}</option>
+                  {% endif %}
+                </select>
+                <span class="material-symbols-outlined text-slate-400 text-[20px] absolute right-3 top-3 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Head Commit Dropdown -->
+            <div class="lg:col-span-3 flex flex-col gap-2">
+              <label for="head-select" class="font-label-code-sm text-[12px] text-slate-300 font-bold uppercase tracking-wider flex items-center justify-between">
+                <span>Head Commit (Newer)</span>
+                <span class="text-blue-400 font-bold normal-case font-mono">Target Head</span>
+              </label>
+              <div class="relative bg-[#050b17] border border-blue-500/60 rounded-xl shadow-sm ring-1 ring-blue-500/30 hover:border-blue-400 transition-colors">
+                <select id="head-select" name="head" class="w-full bg-transparent font-label-code-sm text-[13px] text-blue-200 px-3.5 py-3 rounded-xl outline-none appearance-none cursor-pointer pr-10 truncate font-semibold">
+                  {% if commits %}
+                    {% for c in commits %}
+                    <option value="{{ c.hash }}" {{ 'selected' if c.hash == head }} class="bg-[#050b17] text-slate-100">
+                      {{ c.short }} - {{ c.message[:40] }} ({{ c.author }})
+                    </option>
+                    {% endfor %}
+                  {% else %}
+                    <option value="{{ head }}">{{ head[:10] if head else 'HEAD' }}</option>
+                  {% endif %}
+                </select>
+                <span class="material-symbols-outlined text-blue-400 text-[20px] absolute right-3 top-3 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Action Submit Button -->
+            <div class="lg:col-span-2">
+              <button id="analyze-btn" class="w-full h-12 bg-blue-600 text-white hover:bg-blue-500 font-label-code-sm text-[13px] rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg shadow-blue-900/30 transition-all active:scale-95 focus:ring-2 focus:ring-blue-400 cursor-pointer" type="submit">
+                <span class="material-symbols-outlined text-[20px]">saved_search</span>
+                <span>Analyze Diff</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {% if not error and results %}
+        <!-- 3 Severity Metrics Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- High Risk Card -->
+          <div class="bg-[#0b1528] border border-rose-500/30 hover:border-rose-500/60 rounded-2xl p-6 shadow-lg flex flex-col justify-between relative overflow-hidden group transition-all">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-rose-500"></div>
+            <div>
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-rose-400 text-[24px]">dangerous</span>
+                  <span class="font-label-code-sm text-[13px] uppercase tracking-wider text-rose-300 font-bold">High Risk Severity</span>
+                </div>
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-300 font-label-code-sm text-[12px] font-bold">
+                  <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+                  {{ ((counts.High / results|length) * 100)|round|int }}% of diff
+                </span>
+              </div>
+              <div class="flex items-baseline gap-3.5 mb-3">
+                <span class="text-[44px] font-extrabold text-white font-metric-display leading-none">{{ counts.High }}</span>
+                <span class="text-[15px] text-slate-300 font-medium">affected files</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 text-rose-300 text-[13px] mt-4 pt-3.5 border-t border-slate-800 bg-[#050b17]/60 rounded-xl px-3.5 py-2.5 font-medium">
+              <span class="material-symbols-outlined text-[18px] text-rose-400">
+                {% if counts.High > 0 %}warning{% else %}verified{% endif %}
+              </span>
+              <span>
+                {% if counts.High > 0 %}
+                {{ counts.High }} critical file(s) require senior review &amp; QA test plan
+                {% else %}
+                Clean — No critical risk files detected
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Medium Risk Card -->
+          <div class="bg-[#0b1528] border border-amber-500/30 hover:border-amber-500/60 rounded-2xl p-6 shadow-lg flex flex-col justify-between relative overflow-hidden group transition-all">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-amber-500"></div>
+            <div>
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-amber-400 text-[24px]">warning</span>
+                  <span class="font-label-code-sm text-[13px] uppercase tracking-wider text-amber-300 font-bold">Medium Risk Severity</span>
+                </div>
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-label-code-sm text-[12px] font-bold">
+                  <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                  {{ ((counts.Medium / results|length) * 100)|round|int }}% of diff
+                </span>
+              </div>
+              <div class="flex items-baseline gap-3.5 mb-3">
+                <span class="text-[44px] font-extrabold text-white font-metric-display leading-none">{{ counts.Medium }}</span>
+                <span class="text-[15px] text-slate-300 font-medium">affected files</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 text-amber-300 text-[13px] mt-4 pt-3.5 border-t border-slate-800 bg-[#050b17]/60 rounded-xl px-3.5 py-2.5 font-medium">
+              <span class="material-symbols-outlined text-[18px] text-amber-400">
+                {% if counts.Medium > 0 %}rule{% else %}check_circle{% endif %}
+              </span>
+              <span>
+                {% if counts.Medium > 0 %}
+                {{ counts.Medium }} moderate file(s) require targeted unit testing
+                {% else %}
+                Clean — No medium risk files detected
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- Low Risk Card -->
+          <div class="bg-[#0b1528] border border-emerald-500/40 hover:border-emerald-500/80 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group ring-1 ring-emerald-500/20 bg-gradient-to-b from-[#0b1528] to-[#0e1c33] transition-all">
+            <div class="absolute top-0 left-0 right-0 h-1.5 bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.7)]"></div>
+            <div>
+              <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-emerald-400 text-[24px]">check_circle</span>
+                  <span class="font-label-code-sm text-[13px] uppercase tracking-wider text-emerald-300 font-bold">Low Risk Severity</span>
+                </div>
+                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-label-code-sm text-[12px] font-bold">
+                  <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                  {{ ((counts.Low / results|length) * 100)|round|int }}% of diff
+                </span>
+              </div>
+              <div class="flex items-baseline gap-3.5 mb-3">
+                <span class="text-[44px] font-extrabold text-emerald-300 font-metric-display leading-none">{{ counts.Low }}</span>
+                <span class="text-[15px] text-slate-200 font-medium">affected files</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 text-emerald-300 text-[13px] mt-4 pt-3.5 border-t border-emerald-500/20 bg-emerald-500/10 rounded-xl px-3.5 py-2.5 font-semibold">
+              <span class="material-symbols-outlined text-[18px] text-emerald-400">verified_user</span>
+              <span>{{ counts.Low }} of {{ results|length }} inspected files within baseline risk</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Risk Analytics: Donut & Bucketed Distribution Breakdown -->
+        <section id="risk-analytics" class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          
+          <!-- Left: Donut Chart -->
+          <div class="xl:col-span-5 bg-[#0b1528] border border-slate-800/90 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-blue-400 text-[24px]">pie_chart</span>
+                  <h2 class="text-[18px] text-white font-bold">Risk Category Distribution</h2>
+                </div>
+                <span class="font-label-code-sm text-[13px] text-slate-300 font-bold bg-[#050b17] px-3 py-1 rounded-lg border border-slate-800">
+                  N = {{ results|length }} Files
+                </span>
+              </div>
+
+              <!-- Donut Visual Area -->
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
+                <div class="relative w-48 h-48 flex items-center justify-center shrink-0">
+                  <svg class="w-full h-full -rotate-90 drop-shadow-md" viewBox="0 0 120 120">
+                    <circle class="text-slate-800" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-width="13"></circle>
+                    
+                    {% set total_f = results|length %}
+                    {% set p_low = (counts.Low / total_f) if total_f > 0 else 0 %}
+                    {% set p_med = (counts.Medium / total_f) if total_f > 0 else 0 %}
+                    {% set p_high = (counts.High / total_f) if total_f > 0 else 0 %}
+                    
+                    <!-- Circumference: 2 * pi * 50 = 314.159 -->
+                    <!-- Green (Low) Segment -->
+                    <circle class="text-emerald-400 transition-all duration-700" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-dasharray="{{ p_low * 314.16 }} 314.16" stroke-dashoffset="0" stroke-width="13"></circle>
+                    <!-- Amber (Med) Segment -->
+                    <circle class="text-amber-400 transition-all duration-700" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-dasharray="{{ p_med * 314.16 }} 314.16" stroke-dashoffset="-{{ p_low * 314.16 }}" stroke-width="13"></circle>
+                    <!-- Rose (High) Segment -->
+                    <circle class="text-rose-500 transition-all duration-700" cx="60" cy="60" fill="transparent" r="50" stroke="currentColor" stroke-dasharray="{{ p_high * 314.16 }} 314.16" stroke-dashoffset="-{{ (p_low + p_med) * 314.16 }}" stroke-width="13"></circle>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+                    <span class="font-metric-display text-[28px] font-extrabold text-white leading-tight">
+                      {% if counts.High > 0 %}
+                        {{ (p_high * 100)|round|int }}%
+                      {% elif counts.Medium > 0 %}
+                        {{ (p_med * 100)|round|int }}%
+                      {% else %}
+                        100%
+                      {% endif %}
+                    </span>
+                    <span class="font-label-code-sm text-[12px] uppercase tracking-wider font-extrabold mt-0.5 {% if counts.High > 0 %}text-rose-400{% elif counts.Medium > 0 %}text-amber-400{% else %}text-emerald-400{% endif %}">
+                      {% if counts.High > 0 %}High Risk{% elif counts.Medium > 0 %}Med Risk{% else %}Low Risk{% endif %}
+                    </span>
+                    <span class="font-label-code-sm text-[11px] text-slate-400 mt-1 font-semibold">
+                      {{ results|length }} Inspected
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Legend breakdown -->
+                <div class="flex flex-col gap-3 w-full sm:w-auto flex-1">
+                  <div class="flex items-center justify-between gap-4 bg-[#050b17] px-4 py-2.5 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-3">
+                      <span class="h-3.5 w-3.5 rounded-full bg-rose-500 shrink-0"></span>
+                      <span class="text-[13px] text-slate-300 font-medium">High (71–100)</span>
+                    </div>
+                    <span class="font-label-code-sm text-[13px] text-slate-400 font-bold">
+                      {{ counts.High }} ({{ (p_high * 100)|round|int }}%)
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between gap-4 bg-[#050b17] px-4 py-2.5 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-3">
+                      <span class="h-3.5 w-3.5 rounded-full bg-amber-500 shrink-0"></span>
+                      <span class="text-[13px] text-slate-300 font-medium">Medium (36–70)</span>
+                    </div>
+                    <span class="font-label-code-sm text-[13px] text-slate-400 font-bold">
+                      {{ counts.Medium }} ({{ (p_med * 100)|round|int }}%)
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between gap-4 bg-[#050b17] px-4 py-2.5 rounded-xl border border-emerald-500/40 ring-1 ring-emerald-500/20 bg-emerald-500/5">
+                    <div class="flex items-center gap-3">
+                      <span class="h-3.5 w-3.5 rounded-full bg-emerald-400 shrink-0"></span>
+                      <span class="text-[13px] text-white font-bold">Low (0–35)</span>
+                    </div>
+                    <span class="font-label-code-sm text-[13px] text-emerald-400 font-extrabold">
+                      {{ counts.Low }} ({{ (p_low * 100)|round|int }}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Aggregate Risk Index Gauge -->
+            {% set avg_score = (results|map(attribute='score')|sum / results|length)|round|int if results else 0 %}
+            {% set total_added = results|map(attribute='added')|sum if results else 0 %}
+            {% set total_deleted = results|map(attribute='deleted')|sum if results else 0 %}
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-4 mt-4 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="font-label-code-sm text-[12px] text-slate-300 uppercase tracking-wider font-bold">Aggregate Diff Risk Index</span>
+                <span class="font-label-code-sm text-[12px] font-bold px-2.5 py-0.5 rounded-md border {% if avg_score > 66 %}text-rose-400 bg-rose-500/15 border-rose-500/30{% elif avg_score > 33 %}text-amber-400 bg-amber-500/15 border-amber-500/30{% else %}text-emerald-400 bg-emerald-500/15 border-emerald-500/30{% endif %}">
+                  {{ avg_score }} / 100 • {% if avg_score > 66 %}High Risk{% elif avg_score > 33 %}Moderate{% else %}Safe{% endif %}
+                </span>
+              </div>
+              <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                <div class="h-full rounded-full {% if avg_score > 66 %}bg-rose-500{% elif avg_score > 33 %}bg-amber-400{% else %}bg-emerald-400{% endif %}" style="width: {{ avg_score }}%;"></div>
+              </div>
+              <span class="text-[12px] text-slate-400 font-label-code-sm">
+                Calculated across +{{ total_added }} additions, -{{ total_deleted }} deletions in {{ results|length }} files.
+              </span>
+            </div>
+          </div>
+
+          <!-- Right: Histogram & Calibration Breakdown -->
+          <div class="xl:col-span-7 bg-[#0b1528] border border-slate-800/90 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+                <div class="flex items-center gap-2.5">
+                  <span class="material-symbols-outlined text-blue-400 text-[24px]">bar_chart</span>
+                  <h2 class="text-[18px] text-white font-bold">Risk Score Buckets &amp; Distribution</h2>
+                </div>
+                <span class="font-label-code-sm text-[13px] text-slate-300 font-bold bg-[#050b17] px-3 py-1 rounded-lg border border-slate-800">Distribution Histogram</span>
+              </div>
+
+              <!-- Histogram Buckets Setup in Jinja -->
+              {% set b_0_10 = [] %}
+              {% set b_11_30 = [] %}
+              {% set b_31_50 = [] %}
+              {% set b_51_75 = [] %}
+              {% set b_76_100 = [] %}
+
+              {% for r in results %}
+                {% if r.score <= 10 %}
+                  {% set _ = b_0_10.append(r) %}
+                {% elif r.score <= 30 %}
+                  {% set _ = b_11_30.append(r) %}
+                {% elif r.score <= 50 %}
+                  {% set _ = b_31_50.append(r) %}
+                {% elif r.score <= 75 %}
+                  {% set _ = b_51_75.append(r) %}
+                {% else %}
+                  {% set _ = b_76_100.append(r) %}
+                {% endif %}
+              {% endfor %}
+
+              <!-- Histogram Visual Area -->
+              <div class="bg-[#050b17] border border-slate-800 rounded-xl p-4.5 mb-5 flex flex-col gap-3">
+                <!-- 0–10 -->
+                <div class="flex items-center gap-3.5">
+                  <span class="font-label-code-sm text-[13px] text-slate-300 w-16 text-right font-bold">0–10</span>
+                  <div class="flex-1 bg-slate-800/80 h-7 rounded-lg overflow-hidden flex items-center px-1 border border-slate-700/50">
+                    {% if b_0_10|length > 0 %}
+                    <div class="bg-emerald-400 h-5 rounded text-[11px] font-label-code-sm text-[#050b17] font-extrabold px-2.5 flex items-center justify-between transition-all" style="width: {{ [((b_0_10|length / results|length) * 100)|round|int, 15]|max }}%;">
+                      <span>{{ b_0_10|length }} file(s)</span>
+                      <span class="hidden sm:inline font-mono opacity-80 ml-2 truncate">
+                        {{ b_0_10|map(attribute='path')|join(', ') }}
+                      </span>
+                    </div>
+                    {% else %}
+                    <span class="font-label-code-sm text-[11px] text-slate-500 pl-2">None</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-label-code-sm text-[13px] font-bold w-6 text-center {% if b_0_10|length > 0 %}text-emerald-400{% else %}text-slate-500{% endif %}">
+                    {{ b_0_10|length }}
+                  </span>
+                </div>
+
+                <!-- 11–30 -->
+                <div class="flex items-center gap-3.5">
+                  <span class="font-label-code-sm text-[13px] text-slate-300 w-16 text-right font-bold">11–30</span>
+                  <div class="flex-1 bg-slate-800/80 h-7 rounded-lg overflow-hidden flex items-center px-1 border border-slate-700/50">
+                    {% if b_11_30|length > 0 %}
+                    <div class="bg-emerald-500 h-5 rounded text-[11px] font-label-code-sm text-white font-extrabold px-2.5 flex items-center justify-between transition-all" style="width: {{ [((b_11_30|length / results|length) * 100)|round|int, 15]|max }}%;">
+                      <span>{{ b_11_30|length }} file(s)</span>
+                      <span class="hidden sm:inline font-mono opacity-80 ml-2 truncate">
+                        {{ b_11_30|map(attribute='path')|join(', ') }}
+                      </span>
+                    </div>
+                    {% else %}
+                    <span class="font-label-code-sm text-[11px] text-slate-500 pl-2">None</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-label-code-sm text-[13px] font-bold w-6 text-center {% if b_11_30|length > 0 %}text-emerald-400{% else %}text-slate-500{% endif %}">
+                    {{ b_11_30|length }}
+                  </span>
+                </div>
+
+                <!-- 31–50 -->
+                <div class="flex items-center gap-3.5">
+                  <span class="font-label-code-sm text-[13px] text-slate-300 w-16 text-right font-bold">31–50</span>
+                  <div class="flex-1 bg-slate-800/80 h-7 rounded-lg overflow-hidden flex items-center px-1 border border-slate-700/50">
+                    {% if b_31_50|length > 0 %}
+                    <div class="bg-blue-500 h-5 rounded text-[11px] font-label-code-sm text-white font-extrabold px-2.5 flex items-center justify-between transition-all" style="width: {{ [((b_31_50|length / results|length) * 100)|round|int, 15]|max }}%;">
+                      <span>{{ b_31_50|length }} file(s)</span>
+                      <span class="hidden sm:inline font-mono opacity-80 ml-2 truncate">
+                        {{ b_31_50|map(attribute='path')|join(', ') }}
+                      </span>
+                    </div>
+                    {% else %}
+                    <span class="font-label-code-sm text-[11px] text-slate-500 pl-2">None</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-label-code-sm text-[13px] font-bold w-6 text-center {% if b_31_50|length > 0 %}text-blue-400{% else %}text-slate-500{% endif %}">
+                    {{ b_31_50|length }}
+                  </span>
+                </div>
+
+                <!-- 51–75 -->
+                <div class="flex items-center gap-3.5">
+                  <span class="font-label-code-sm text-[13px] text-slate-300 w-16 text-right font-bold">51–75</span>
+                  <div class="flex-1 bg-slate-800/80 h-7 rounded-lg overflow-hidden flex items-center px-1 border border-slate-700/50">
+                    {% if b_51_75|length > 0 %}
+                    <div class="bg-amber-500 h-5 rounded text-[11px] font-label-code-sm text-slate-900 font-extrabold px-2.5 flex items-center justify-between transition-all" style="width: {{ [((b_51_75|length / results|length) * 100)|round|int, 15]|max }}%;">
+                      <span>{{ b_51_75|length }} file(s)</span>
+                      <span class="hidden sm:inline font-mono opacity-80 ml-2 truncate">
+                        {{ b_51_75|map(attribute='path')|join(', ') }}
+                      </span>
+                    </div>
+                    {% else %}
+                    <span class="font-label-code-sm text-[11px] text-slate-500 pl-2">None</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-label-code-sm text-[13px] font-bold w-6 text-center {% if b_51_75|length > 0 %}text-amber-400{% else %}text-slate-500{% endif %}">
+                    {{ b_51_75|length }}
+                  </span>
+                </div>
+
+                <!-- 76–100 -->
+                <div class="flex items-center gap-3.5">
+                  <span class="font-label-code-sm text-[13px] text-slate-300 w-16 text-right font-bold">76–100</span>
+                  <div class="flex-1 bg-slate-800/80 h-7 rounded-lg overflow-hidden flex items-center px-1 border border-slate-700/50">
+                    {% if b_76_100|length > 0 %}
+                    <div class="bg-rose-500 h-5 rounded text-[11px] font-label-code-sm text-white font-extrabold px-2.5 flex items-center justify-between transition-all" style="width: {{ [((b_76_100|length / results|length) * 100)|round|int, 15]|max }}%;">
+                      <span>{{ b_76_100|length }} file(s)</span>
+                      <span class="hidden sm:inline font-mono opacity-80 ml-2 truncate">
+                        {{ b_76_100|map(attribute='path')|join(', ') }}
+                      </span>
+                    </div>
+                    {% else %}
+                    <span class="font-label-code-sm text-[11px] text-slate-500 pl-2">None</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-label-code-sm text-[13px] font-bold w-6 text-center {% if b_76_100|length > 0 %}text-rose-400{% else %}text-slate-500{% endif %}">
+                    {{ b_76_100|length }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Guidelines Box -->
+            <div id="notice-section" class="bg-[#050b17] border border-slate-800 rounded-xl p-4 flex flex-col gap-2.5">
+              <div class="flex items-center gap-2 text-blue-400 text-[13px] font-bold">
+                <span class="material-symbols-outlined text-[18px]">info</span>
+                <span>Understanding Risk Score Calibration</span>
+              </div>
+              <p class="text-[12px] text-slate-300 leading-relaxed">
+                Risk points evaluate change size, cyclomatic complexity, past commit frequency, past bug fixes, authorship churn, and test co-changes.
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-1">
+                <div class="bg-[#0b1528] border border-emerald-500/30 p-2.5 rounded-lg">
+                  <span class="font-label-code-sm text-[12px] text-emerald-400 font-bold block">0–33 Low</span>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Automated CI build &amp; standard test pass</p>
+                </div>
+                <div class="bg-[#0b1528] border border-amber-500/30 p-2.5 rounded-lg">
+                  <span class="font-label-code-sm text-[12px] text-amber-400 font-bold block">34–66 Medium</span>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Peer review &amp; targeted regression checks</p>
+                </div>
+                <div class="bg-[#0b1528] border border-rose-500/30 p-2.5 rounded-lg">
+                  <span class="font-label-code-sm text-[12px] text-rose-400 font-bold block">67–100 High</span>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Senior architect sign-off &amp; deep triage</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Changed Files Table Section -->
+        <section id="files-table" class="bg-[#0b1528] border border-slate-800/90 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div>
+              <div class="flex items-center gap-3">
+                <h2 class="text-[20px] text-white font-bold tracking-tight">Changed Files – Highest Risk First</h2>
+                <span class="px-2.5 py-0.5 rounded-md bg-[#050b17] border border-slate-700 text-blue-400 font-label-code-sm text-[12px] font-bold">
+                  {{ results|length }} Files
+                </span>
+              </div>
+              <p class="text-[13px] text-slate-400 mt-1">Algorithmic triage prioritizing files with highest defect potential.</p>
+            </div>
+            
+            <div class="flex items-center gap-3 flex-wrap">
+              <!-- Search Input -->
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3.5 top-2.5 text-slate-400 text-[18px]">search</span>
+                <input id="file-search-input" oninput="filterFiles(this.value)" class="bg-[#050b17] text-white placeholder:text-slate-400 font-label-code-sm text-[13px] pl-10 pr-3.5 py-2 rounded-xl border border-slate-700/80 outline-none w-56 sm:w-72 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Filter files by path..." type="text"/>
+              </div>
+              <!-- Export Diff JSON Button -->
+              <a href="{{ url_for('api_analyze', repo=repo, base=base, head=head) }}" target="_blank" class="bg-[#111c30] hover:bg-[#18263e] border border-slate-700/80 text-white font-label-code-sm text-[12px] px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all font-semibold shadow-sm" title="Download raw JSON analysis">
+                <span class="material-symbols-outlined text-[17px] text-slate-300">download</span>
+                <span>Export JSON</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto rounded-xl border border-slate-800/80">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#050b17] text-slate-300 font-label-code-sm text-[12px] uppercase tracking-wider border-b border-slate-800">
+                  <th class="py-3.5 px-5 font-bold">File Path</th>
+                  <th class="py-3.5 px-4 font-bold">Risk Level</th>
+                  <th class="py-3.5 px-4 font-bold">Risk Score</th>
+                  <th class="py-3.5 px-4 font-bold">Lines (+ / -)</th>
+                  <th class="py-3.5 px-4 font-bold">Complexity</th>
+                  <th class="py-3.5 px-4 font-bold">Primary Risk Indicators</th>
+                  <th class="py-3.5 px-5 text-right font-bold">Deep Dive</th>
+                </tr>
+              </thead>
+              <tbody id="files-table-body" class="divide-y divide-slate-800/80 text-[13px]">
+                {% for r in results %}
+                <tr id="row-{{ loop.index0 }}" onclick="selectFile({{ loop.index0 }})" class="hover:bg-[#111c30]/70 transition-colors cursor-pointer {% if loop.first %}bg-[#111c30]/90 border-l-4 border-blue-500{% endif %}" data-path="{{ r.path }}">
+                  <td class="py-4 px-5">
+                    <div class="flex items-center gap-3">
+                      <div class="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">
+                          {% if r.path.endswith('.py') %}code{% elif 'test' in r.path %}science{% else %}description{% endif %}
+                        </span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="font-label-code-sm text-[13px] font-bold text-white">{{ r.path.split('/')[-1] }}</span>
+                        <span class="font-label-code-sm text-[11px] text-slate-400 mt-0.5 truncate max-w-[280px]">{{ r.path }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-code-sm text-[11px] font-bold {% if r.level == 'High' %}bg-rose-500/15 border border-rose-500/30 text-rose-300{% elif r.level == 'Medium' %}bg-amber-500/15 border border-amber-500/30 text-amber-300{% else %}bg-emerald-500/15 border border-emerald-500/30 text-emerald-300{% endif %}">
+                      <span class="h-1.5 w-1.5 rounded-full {% if r.level == 'High' %}bg-rose-500{% elif r.level == 'Medium' %}bg-amber-500{% else %}bg-emerald-400{% endif %}"></span>
+                      {{ r.level }}
+                    </span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex items-center gap-2.5 w-36">
+                      <div class="flex-1 bg-[#050b17] h-2 rounded-full overflow-hidden border border-slate-700/60 p-0.5">
+                        <div class="h-full rounded-full {% if r.level == 'High' %}bg-rose-500{% elif r.level == 'Medium' %}bg-amber-400{% else %}bg-emerald-400{% endif %}" style="width: {{ r.score }}%;"></div>
+                      </div>
+                      <span class="font-label-code-sm text-[12px] font-bold text-white w-12 text-right">{{ r.score }}/100</span>
+                    </div>
+                  </td>
+                  <td class="py-4 px-4 font-label-code-sm text-[12px]">
+                    <span class="text-emerald-400 font-semibold">+{{ r.added }}</span>
+                    <span class="text-slate-500 mx-1">/</span>
+                    <span class="text-rose-400 font-semibold">-{{ r.deleted }}</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="px-2.5 py-1 rounded-md bg-[#18263e] border border-slate-700 font-label-code-sm text-[12px] text-white font-bold">
+                      {{ r.complexity }}
+                    </span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex flex-wrap gap-1.5 max-w-[340px]">
+                      {% for reason in r.reasons[:2] %}
+                      <span class="px-2 py-0.5 rounded bg-[#050b17] border border-slate-700/80 font-label-code-sm text-[11px] text-slate-300 truncate" title="{{ reason }}">
+                        {{ reason }}
+                      </span>
+                      {% endfor %}
+                      {% if r.reasons|length > 2 %}
+                      <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[11px] font-label-code-sm text-slate-400">+{{ r.reasons|length - 2 }}</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="py-4 px-5 text-right">
+                    <button type="button" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-label-code-sm text-[12px] font-bold inline-flex items-center gap-1 shadow transition-all active:scale-95">
+                      <span>Inspect</span>
+                      <span class="material-symbols-outlined text-[15px]">expand_circle_down</span>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div id="no-files-match" class="hidden p-8 text-center text-slate-400 font-label-code-sm text-[13px]">
+              No files match your search filter.
+            </div>
+          </div>
+        </section>
+
+        <!-- File Deep Dive Panel (Interactive Selected File) -->
+        {% set top_file = results[0] %}
+        <section id="deep-dive-panel" class="bg-[#0b1528] border border-blue-500/50 rounded-2xl p-7 shadow-2xl relative overflow-hidden ring-1 ring-blue-500/30">
+          <div class="absolute top-0 left-0 bottom-0 w-2.5 bg-blue-500"></div>
+          
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-slate-800 gap-4">
+            <div class="flex items-center gap-4 pl-2">
+              <div class="h-12 w-12 rounded-xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
+                <span class="material-symbols-outlined text-[26px]">troubleshoot</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <h3 id="deep-dive-title" class="text-[20px] text-white font-extrabold tracking-tight">
+                    File Deep Dive: {{ top_file.path }}
+                  </h3>
+                  <span id="deep-dive-badge" class="px-3 py-1 rounded-full font-label-code-sm text-[12px] font-bold {% if top_file.level == 'High' %}bg-rose-500/15 border border-rose-500/40 text-rose-300{% elif top_file.level == 'Medium' %}bg-amber-500/15 border border-amber-500/40 text-amber-300{% else %}bg-emerald-500/15 border border-emerald-500/40 text-emerald-300{% endif %}">
+                    {{ top_file.level }} Risk ({{ top_file.score }}/100)
+                  </span>
+                </div>
+                <p id="deep-dive-sub" class="text-[13px] text-slate-400 mt-1">Detailed algorithmic risk attribution, cyclomatic complexity Δ, and guided review checklist.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 pl-2 lg:pl-0">
+              <button onclick="document.getElementById('files-table').scrollIntoView({behavior: 'smooth'})" class="bg-[#050b17] hover:bg-[#111c30] text-slate-300 hover:text-white border border-slate-700/80 px-3.5 py-2 rounded-xl font-label-code-sm text-[12px] font-bold inline-flex items-center gap-2 transition-all shadow-sm" type="button">
+                <span class="material-symbols-outlined text-[17px] text-blue-400">arrow_upward</span>
+                <span>Back to File List</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Metric 4-Grid Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5 my-6">
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="font-label-code-sm text-[12px] text-slate-300 uppercase tracking-wider block font-bold mb-2">Calculated Score</span>
+                <div class="flex items-baseline gap-2">
+                  <span id="deep-dive-score" class="font-metric-display text-[32px] font-extrabold text-blue-400 leading-none">{{ top_file.score }}</span>
+                  <span class="text-[14px] text-slate-400 font-bold">/ 100</span>
+                </div>
+              </div>
+              <span id="deep-dive-score-note" class="text-[12px] font-semibold flex items-center gap-1.5 mt-2.5 leading-relaxed {% if top_file.score > 66 %}text-rose-400{% elif top_file.score > 33 %}text-amber-400{% else %}text-emerald-400{% endif %}">
+                <span class="material-symbols-outlined text-[15px] shrink-0">check_circle</span>
+                <span>{% if top_file.score > 66 %}High risk threshold (score &gt; 66){% elif top_file.score > 33 %}Moderate risk threshold (34–66){% else %}Within safe threshold (&lt; 34){% endif %}</span>
+              </span>
+            </div>
+
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="font-label-code-sm text-[12px] text-slate-300 uppercase tracking-wider block font-bold mb-2">Cyclomatic Complexity</span>
+                <div class="flex items-baseline gap-2">
+                  <span id="deep-dive-complexity" class="font-metric-display text-[32px] font-extrabold text-white leading-none">{{ top_file.complexity }}</span>
+                  <span id="deep-dive-nesting" class="text-[13px] text-amber-400 font-extrabold">depth {{ top_file.nesting|default(0) }}</span>
+                </div>
+              </div>
+              <span class="text-[12px] text-slate-400 font-medium mt-2.5 block leading-relaxed">Branching density &amp; decision nodes</span>
+            </div>
+
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="font-label-code-sm text-[12px] text-slate-300 uppercase tracking-wider block font-bold mb-2">Change Statistics</span>
+                <div class="flex items-baseline gap-2">
+                  <span id="deep-dive-churn" class="font-metric-display text-[32px] font-extrabold text-emerald-400 leading-none">+{{ top_file.added }} / -{{ top_file.deleted }}</span>
+                </div>
+              </div>
+              <span id="deep-dive-loc" class="text-[12px] text-slate-400 font-medium mt-2.5 block leading-relaxed">Total file lines: {{ top_file.loc|default(top_file.added) }}</span>
+            </div>
+
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="font-label-code-sm text-[12px] text-slate-300 uppercase tracking-wider block font-bold mb-2">Historical Churn</span>
+                <div class="flex items-baseline gap-2">
+                  <span id="deep-dive-commits" class="font-metric-display text-[32px] font-extrabold text-white leading-none">{{ top_file.commits }}</span>
+                  <span class="text-[14px] text-slate-400 font-medium">earlier commits</span>
+                </div>
+              </div>
+              <span id="deep-dive-authors" class="text-[12px] text-slate-400 font-medium mt-2.5 block leading-relaxed">Edited by {{ top_file.authors }} author(s), {{ top_file.fix_commits }} bug-fix(es)</span>
+            </div>
+          </div>
+
+          <!-- Dual Column: Reasons vs Checklist -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left: Reasons Behind the Risk Score -->
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 flex flex-col gap-3.5 shadow-sm">
+              <div class="flex items-center gap-2.5 text-white font-label-code-sm text-[13px] font-bold pb-2.5 border-b border-slate-800">
+                <span class="material-symbols-outlined text-blue-400 text-[20px]">account_tree</span>
+                <span>Reasons Behind Risk Attribution</span>
+              </div>
+              <div id="deep-dive-reasons" class="flex flex-col gap-2.5 text-[13px]">
+                {% for reason in top_file.reasons %}
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800">
+                  <span class="font-label-code-sm text-[11px] text-blue-400 font-bold bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
+                    0{{ loop.index }}
+                  </span>
+                  <div class="flex-1">
+                    <span class="text-slate-100 font-medium leading-relaxed block">{{ reason }}</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Right: Review & Testing Checklist -->
+            <div class="bg-[#050b17] border border-slate-800 rounded-xl p-5 flex flex-col gap-3.5 shadow-sm">
+              <div class="flex items-center gap-2.5 text-white font-label-code-sm text-[13px] font-bold pb-2.5 border-b border-slate-800">
+                <span class="material-symbols-outlined text-emerald-400 text-[20px]">checklist</span>
+                <span>Suggested Testing Areas &amp; Review Focus</span>
+              </div>
+              <div id="deep-dive-checklist" class="flex flex-col gap-2.5 text-[13px]">
+                {% if top_file.complexity >= 8 %}
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800">
+                  <span class="material-symbols-outlined text-amber-400 text-[18px] mt-0.5 shrink-0">rule</span>
+                  <span class="text-slate-200">High branch complexity: verify boundary cases for each conditional branch and nested loop.</span>
+                </label>
+                {% endif %}
+                {% if not top_file.tests_in_change %}
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800">
+                  <span class="material-symbols-outlined text-amber-400 text-[18px] mt-0.5 shrink-0">science</span>
+                  <span class="text-slate-200">No test file touched: add unit tests covering new logic introduced in this diff.</span>
+                </label>
+                {% endif %}
+                {% if top_file.fix_commits > 0 %}
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800">
+                  <span class="material-symbols-outlined text-rose-400 text-[18px] mt-0.5 shrink-0">history_edu</span>
+                  <span class="text-slate-200">Past defect hotspot: check earlier bug fixes in Git history to prevent regression reoccurrence.</span>
+                </label>
+                {% endif %}
+                <label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800">
+                  <span class="material-symbols-outlined text-emerald-400 text-[18px] mt-0.5 shrink-0">check_circle</span>
+                  <span class="text-slate-200">Run automated test runner and verify zero unexpected side-effects across consuming modules.</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {% elif not error and not results %}
+        <!-- Empty Diff State -->
+        <section class="bg-[#0b1528] border border-slate-800/90 rounded-2xl p-12 text-center shadow-xl">
+          <div class="h-16 w-16 mx-auto rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-4">
+            <span class="material-symbols-outlined text-[36px]">check_circle</span>
+          </div>
+          <h2 class="text-[22px] font-bold text-white">No Changed Files Detected</h2>
+          <p class="text-[14px] text-slate-400 mt-2 max-w-md mx-auto">
+            The selected base and head commits are identical or contain no trackable code file diffs. Select different commits above to compare.
+          </p>
+        </section>
+        {% endif %}
+
+        <!-- Bottom Notice Section -->
+        <section class="bg-[#050b17] border border-slate-800 rounded-2xl p-4.5 shadow-sm flex items-start sm:items-center gap-3.5">
+          <div class="p-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 shrink-0">
+            <span class="material-symbols-outlined text-[20px]">info</span>
+          </div>
+          <div class="flex-1 text-[13px] text-slate-400 leading-relaxed">
+            <span class="font-bold text-slate-200">Notice:</span>
+            Risk scores estimate potential bug likelihood and help teams focus test coverage and code review triage. They are heuristic calculations and do not prove that a bug exists.
+          </div>
+        </section>
+
+      </div>
+    </main>
   </div>
-</div>
-                {{ r.score }}/100
-              </td>
-              <td>+{{ r.added }} / -{{ r.deleted }}</td>
-              <td>{{ r.complexity }}</td>
-              <td><ul>{% for reason in r.reasons %}<li>{{ reason }}</li>{% endfor %}</ul></td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-        <p class="note">Scores estimate risk and suggest where to test more. They do not prove a bug exists.</p>
-      </section>
-    {% endif %}
-  </main>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    // Embedded backend data for client-side interactivity
+    const analysisResults = {{ results|tojson if results else '[]' }};
+    let currentSelectedIndex = 0;
+
+    // Filter table rows by path
+    function filterFiles(query) {
+      const q = (query || '').toLowerCase().trim();
+      const rows = document.querySelectorAll('#files-table-body tr');
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        const path = (row.getAttribute('data-path') || '').toLowerCase();
+        if (!q || path.includes(q)) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      const noMatch = document.getElementById('no-files-match');
+      if (noMatch) {
+        noMatch.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
+      }
+    }
+
+    // Select file and update Deep Dive panel
+    function selectFile(index) {
+      if (!analysisResults || index < 0 || index >= analysisResults.length) return;
+      currentSelectedIndex = index;
+      const file = analysisResults[index];
+
+      // Update table row active styling
+      document.querySelectorAll('#files-table-body tr').forEach((row, i) => {
+        if (i === index) {
+          row.classList.add('bg-[#111c30]/90', 'border-l-4', 'border-blue-500');
+        } else {
+          row.classList.remove('bg-[#111c30]/90', 'border-l-4', 'border-blue-500');
+        }
+      });
+
+      // Update Deep Dive Header
+      const titleEl = document.getElementById('deep-dive-title');
+      if (titleEl) titleEl.textContent = 'File Deep Dive: ' + file.path;
+
+      const badgeEl = document.getElementById('deep-dive-badge');
+      if (badgeEl) {
+        badgeEl.textContent = file.level + ' Risk (' + file.score + '/100)';
+        badgeEl.className = 'px-3 py-1 rounded-full font-label-code-sm text-[12px] font-bold ' +
+          (file.level === 'High' ? 'bg-rose-500/15 border border-rose-500/40 text-rose-300' :
+           file.level === 'Medium' ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300' :
+           'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300');
+      }
+
+      // Update KPIs
+      const scoreEl = document.getElementById('deep-dive-score');
+      if (scoreEl) scoreEl.textContent = file.score;
+
+      const scoreNoteEl = document.getElementById('deep-dive-score-note');
+      if (scoreNoteEl) {
+        scoreNoteEl.className = 'text-[12px] font-semibold flex items-center gap-1.5 mt-2 ' +
+          (file.score > 66 ? 'text-rose-400' : file.score > 33 ? 'text-amber-400' : 'text-emerald-400');
+        scoreNoteEl.innerHTML = '<span class="material-symbols-outlined text-[15px]">check_circle</span>' +
+          (file.score > 66 ? 'High risk threshold (score > 66)' : file.score > 33 ? 'Moderate risk threshold (34–66)' : 'Within safe threshold (< 34)');
+      }
+
+      const compEl = document.getElementById('deep-dive-complexity');
+      if (compEl) compEl.textContent = file.complexity;
+
+      const nestEl = document.getElementById('deep-dive-nesting');
+      if (nestEl) nestEl.textContent = 'depth ' + (file.nesting || 0);
+
+      const churnEl = document.getElementById('deep-dive-churn');
+      if (churnEl) churnEl.textContent = '+' + file.added + ' / -' + file.deleted;
+
+      const locEl = document.getElementById('deep-dive-loc');
+      if (locEl) locEl.textContent = 'Total file lines: ' + (file.loc || file.added);
+
+      const commitsEl = document.getElementById('deep-dive-commits');
+      if (commitsEl) commitsEl.textContent = file.commits;
+
+      const authorsEl = document.getElementById('deep-dive-authors');
+      if (authorsEl) authorsEl.textContent = 'Edited by ' + file.authors + ' author(s), ' + file.fix_commits + ' bug-fix(es)';
+
+      // Update Reasons
+      const reasonsContainer = document.getElementById('deep-dive-reasons');
+      if (reasonsContainer && file.reasons) {
+        reasonsContainer.innerHTML = '';
+        file.reasons.forEach((r, idx) => {
+          const div = document.createElement('div');
+          div.className = 'flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800';
+          div.innerHTML = '<span class="font-label-code-sm text-[11px] text-blue-400 font-bold bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">0' + (idx + 1) + '</span>' +
+            '<div class="flex-1"><span class="text-slate-100 font-medium leading-relaxed block">' + r + '</span></div>';
+          reasonsContainer.appendChild(div);
+        });
+      }
+
+      // Update Checklist
+      const checklistContainer = document.getElementById('deep-dive-checklist');
+      if (checklistContainer) {
+        checklistContainer.innerHTML = '';
+        if (file.complexity >= 8) {
+          checklistContainer.innerHTML += '<label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800"><span class="material-symbols-outlined text-amber-400 text-[18px] mt-0.5 shrink-0">rule</span><span class="text-slate-200">High branch complexity: verify boundary cases for each conditional branch and nested loop.</span></label>';
+        }
+        if (!file.tests_in_change) {
+          checklistContainer.innerHTML += '<label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800"><span class="material-symbols-outlined text-amber-400 text-[18px] mt-0.5 shrink-0">science</span><span class="text-slate-200">No test file touched: add unit tests covering new logic introduced in this diff.</span></label>';
+        }
+        if (file.fix_commits > 0) {
+          checklistContainer.innerHTML += '<label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800"><span class="material-symbols-outlined text-rose-400 text-[18px] mt-0.5 shrink-0">history_edu</span><span class="text-slate-200">Past defect hotspot: check earlier bug fixes in Git history to prevent regression reoccurrence.</span></label>';
+        }
+        checklistContainer.innerHTML += '<label class="flex items-start gap-3 p-3 rounded-xl bg-[#0b1528] border border-slate-800"><span class="material-symbols-outlined text-emerald-400 text-[18px] mt-0.5 shrink-0">check_circle</span><span class="text-slate-200">Run automated test runner and verify zero unexpected side-effects across consuming modules.</span></label>';
+      }
+
+      // Smooth scroll to panel
+      const panel = document.getElementById('deep-dive-panel');
+      if (panel) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Handle form submit loading state
+    const form = document.getElementById('analysis-form');
+    if (form) {
+      form.addEventListener('submit', () => {
+        const btn = document.getElementById('analyze-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">refresh</span><span>Analyzing...</span>';
+          btn.classList.add('opacity-80', 'cursor-not-allowed');
+        }
+      });
+    }
+  </script>
 </body>
 </html>
