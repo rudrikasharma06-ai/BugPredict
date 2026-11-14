@@ -108,9 +108,20 @@ def has_test_change(files):
     return any("test" in f["path"].lower() for f in files)
 
 
-def analyze(repo, base, head):
-    """Collect every indicator for every file changed between base and head."""
+def analyze(repo, base, head, author=""):
+    """Collect every indicator for every file changed between base and head.
+    If `author` is provided, filters to files touched by this author in the commit range.
+    """
     files = changed_files(repo, base, head)
+    if author and author.strip():
+        search_author = author.strip()
+        try:
+            # Case-insensitive author search for touched files in base..head
+            out = git(repo, "log", "-i", f"--author={search_author}", f"{base}..{head}", "--name-only", "--pretty=format:")
+            author_paths = set(l.strip() for l in out.splitlines() if l.strip())
+            files = [f for f in files if f["path"] in author_paths]
+        except Exception:
+            pass
     test_touched = has_test_change(files)
     results = []
     for f in files:
@@ -118,6 +129,30 @@ def analyze(repo, base, head):
         comp = complexity_of(repo, f["path"], head)
         results.append({**f, **hist, **comp, "tests_in_change": test_touched})
     return results
+
+
+def list_authors(repo, limit=200):
+    """Return unique authors (name and email) from the repository history."""
+    try:
+        out = git(repo, "log", f"-{limit}", "--pretty=format:%an|%ae")
+    except Exception:
+        return []
+    seen = set()
+    authors = []
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|", 1)
+        name = parts[0].strip()
+        email = parts[1].strip() if len(parts) > 1 else ""
+        if name and name not in seen:
+            seen.add(name)
+            authors.append({
+                "name": name,
+                "email": email,
+                "display": f"{name} <{email}>" if email else name,
+            })
+    return authors
 
 
 def author_summary(repo, limit=200):
